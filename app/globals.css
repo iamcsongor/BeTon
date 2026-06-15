@@ -16,17 +16,33 @@ html, body { height: 100%; margin: 0; background: var(--bg); color: var(--txt); 
 .btn.ghost { background: transparent; border: 1px solid var(--line); color: var(--txt2); }
 .row { display: flex; gap: 10px; align-items: center; }
 
-/* Sliding chrome: header + tab bar are absolute overlays that transform out
-   on scroll-down and back on scroll-up (GPU-smooth, no layout reflow). */
+/* Sliding chrome: header + tab bar are translucent, frosted overlays that
+   transform out on scroll-down and back on scroll-up (GPU-smooth, no reflow). */
 .app { position: relative; overflow: hidden; }
 .app .top, .app .tabbar {
   position: absolute; left: 0; right: 0; z-index: 6;
   transition: transform .34s cubic-bezier(.4, 0, .2, 1), opacity .26s ease;
   will-change: transform;
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  backdrop-filter: blur(18px) saturate(1.4);
 }
-.app .top { top: 0; }
-.app .tabbar { bottom: 0; }
+.app .top {
+  top: 0;
+  background: color-mix(in oklch, var(--bg) 58%, transparent);
+  border-bottom: 1px solid color-mix(in oklch, var(--line) 45%, transparent);
+}
+.app .tabbar {
+  bottom: 0;
+  background: color-mix(in oklch, var(--bg) 52%, transparent);
+  border-top: 1px solid color-mix(in oklch, var(--line) 50%, transparent);
+}
 .app .day-head { position: static; }
-.app .scroll { padding-top: 108px; padding-bottom: 96px; }
+.app .scroll { padding-top: 110px; padding-bottom: 96px; }
 .app.chrome-hidden .top { transform: translateY(-100%); opacity: 0; pointer-events: none; }
 .app.chrome-hidden .tabbar { transform: translateY(100%); opacity: 0; pointer-events: none; }
+
+/* Top-right controls: equal-sized buttons, clean circular avatar photo */
+.app .top-actions { align-items: center; gap: 9px; }
+.app .icon-btn { width: 38px; height: 38px; flex: 0 0 auto; }
+.app .avatar-btn { padding: 0; overflow: hidden; }
+.app .avatar-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
