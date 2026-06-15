@@ -18,7 +18,7 @@ This README is the project's **running log**. It captures the vision, every deci
 | User provisioning | ✅ Verified in DB (signup → profile + auto-join via invite) |
 | Onboarding — profile setup | ✅ Built (invite-only) |
 | Challenge flow — create + invite + accept/decline | ✅ Built & DB-verified |
-| Daily logging → DB | ⬜ Planned |
+| Daily logging → DB | ✅ Built — `/log` (calories, protein, junk, gym + muscles, cheat) |
 | Live scoreboard from DB | ⬜ Planned |
 | Check-ins (photos + review) | ⬜ Planned |
 
@@ -168,3 +168,4 @@ Push to GitHub — Vercel auto-builds the Next.js app. Make sure the two env var
 - **2026-06-15** — Revised to **invite-only** (admin allowlist via `BETON_ADMIN_EMAILS`); non-admins only join contests they're challenged to. Wrote the full app into the local git clone at the repo root. Magic-link login uses Supabase's built-in mailer for now; custom SMTP + domain deferred. Cleared the orphaned seed contest.
 - **2026-06-15** — First Vercel build of the app failed on a Supabase typed-client type error (`update(...)` inferred `never`). Set `typescript.ignoreBuildErrors` + `eslint.ignoreDuringBuilds` in `next.config.mjs` to ship; the queries are correct at runtime. Tech debt: realign `@supabase/*` versions with the generated types later and remove these overrides.
 - **2026-06-15** — Added **Google sign-in** (no email rate limits; both players use Gmail) alongside magic link. Made challenges **auto-join on login** and removed the Accept/Decline step.
+- **2026-06-15** — Built the **daily logging screen** (`/log`): record calories, protein, junk, gym + muscle groups, and cheat per day (any date), upserting to `daily_logs`. Dashboard now has a **Log today** button. Scoreboard views fill from these logs.

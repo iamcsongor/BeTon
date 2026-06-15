@@ -106,9 +106,9 @@ export default async function Dashboard() {
               {contest.start_date} → {contest.end_date}
             </div>
           </div>
-          <div className="muted" style={{ textAlign: 'center' }}>
-            Daily logging &amp; live scoreboard — coming next
-          </div>
+          <Link href="/log" className="btn" style={{ display: 'block', textDecoration: 'none' }}>
+            Log today
+          </Link>
           {isAdmin && (
             <Link href="/new" className="muted" style={{ textAlign: 'center', textDecoration: 'none' }}>
               + New contest

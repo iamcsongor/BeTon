@@ -106,3 +106,44 @@ export async function declineInvite(formData: FormData) {
   revalidatePath('/dashboard')
   redirect('/dashboard')
 }
+
+// --- Log / edit a day's entry ----------------------------------------------
+export async function saveDay(formData: FormData) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: parts } = await supabase
+    .from('contest_participants')
+    .select('contest_id')
+    .eq('profile_id', user.id)
+    .limit(1)
+  const contestId = (parts?.[0] as any)?.contest_id
+  if (!contestId) redirect('/dashboard')
+
+  const log_date = String(formData.get('log_date') ?? '')
+  if (!log_date) redirect('/log')
+  const gym = formData.get('gym') === 'on'
+
+  const payload = {
+    contest_id: contestId,
+    profile_id: user.id,
+    log_date,
+    calories: Math.max(0, Number(formData.get('calories') ?? 0)),
+    protein_g: Math.max(0, Number(formData.get('protein_g') ?? 0)),
+    junk_calories: Math.max(0, Number(formData.get('junk_calories') ?? 0)),
+    gym,
+    cheat: formData.get('cheat') === 'on',
+    muscles: gym ? (formData.getAll('muscles') as string[]) : [],
+  }
+
+  await (supabase.from('daily_logs') as any).upsert(payload, {
+    onConflict: 'contest_id,profile_id,log_date',
+  })
+
+  revalidatePath('/log')
+  revalidatePath('/dashboard')
+  redirect(`/log?date=${log_date}&saved=1`)
+}
