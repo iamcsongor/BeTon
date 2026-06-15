@@ -1,87 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import './beton.css';
 
-:root {
-  --bg: #0a0b0f;
-  --bg2: #15171f;
-  --line: #252833;
-  --txt: #e9ecf2;
-  --txt2: #aeb4c2;
-  --txt3: #6b7280;
-  --blue: #2f5fe0;
-  --blue-br: #5b86ff;
-  --red: #e23b3b;
-  --red-br: #ff6b6b;
-  --gold: #e7b53c;
-  --good: #34d399;
-  --tech: 'Martian Mono', ui-monospace, monospace;
-  --mono: 'IBM Plex Mono', ui-monospace, monospace;
-}
+html, body { height: 100%; margin: 0; background: var(--bg); color: var(--txt); }
+#__next { height: 100%; }
 
-* { box-sizing: border-box; }
-
-html, body {
-  margin: 0;
-  padding: 0;
-  background: radial-gradient(120% 120% at 50% 0%, #15171f, #0a0b0f 80%);
-  background-attachment: fixed;
-  color: var(--txt);
-  font-family: var(--mono);
-  -webkit-font-smoothing: antialiased;
-}
-
-.wrap {
-  max-width: 480px;
-  margin: 0 auto;
-  min-height: 100dvh;
-  padding: 24px 18px;
-  display: flex;
-  flex-direction: column;
-}
-
-.brand { font-family: var(--tech); font-weight: 800; letter-spacing: 0.16em; font-size: 20px; }
+/* utilities used by the auth/setup pages (login, new contest, profile) */
+.wrap { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding: 24px 18px; display: flex; flex-direction: column; }
+.brand { font-family: var(--fontTech); font-weight: 800; letter-spacing: 0.16em; font-size: 20px; color: var(--txt); }
 .brand .t { color: var(--gold); }
-
-.muted { color: var(--txt3); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
-
 .card { background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
-
-.input {
-  width: 100%;
-  background: #0e1016;
-  border: 1px solid var(--line);
-  color: var(--txt);
-  border-radius: 10px;
-  padding: 12px 14px;
-  font-family: var(--mono);
-  font-size: 15px;
-}
+.input { width: 100%; background: var(--bg3); border: 1px solid var(--line); color: var(--txt); border-radius: 10px; padding: 12px 14px; font-family: var(--fontMono); font-size: 15px; }
 .input:focus { outline: none; border-color: var(--blue-br); }
-
-.btn {
-  width: 100%;
-  border: none;
-  border-radius: 10px;
-  padding: 13px;
-  font-family: var(--tech);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  font-size: 13px;
-  color: #fff;
-  background: var(--blue);
-  cursor: pointer;
-}
-.btn:disabled { opacity: 0.55; cursor: default; }
+.btn { width: 100%; border: none; border-radius: 10px; padding: 13px; font-family: var(--fontTech); font-weight: 700; letter-spacing: 0.08em; font-size: 13px; color: #fff; background: var(--blue); cursor: pointer; }
+.btn:disabled { opacity: 0.55; }
 .btn.ghost { background: transparent; border: 1px solid var(--line); color: var(--txt2); }
-
 .row { display: flex; gap: 10px; align-items: center; }
-
-.corner { flex: 1; text-align: center; padding: 16px 12px; border-radius: 12px; border: 1px solid var(--line); }
-.corner.blue { background: linear-gradient(180deg, rgba(47,95,224,0.18), transparent); }
-.corner.red  { background: linear-gradient(180deg, rgba(226,59,59,0.18), transparent); }
-
-.score { font-family: var(--tech); font-weight: 800; font-size: 42px; line-height: 1; }
-.name { font-family: var(--tech); font-weight: 700; letter-spacing: 0.1em; font-size: 13px; }
-.vs { font-family: var(--tech); font-weight: 800; color: var(--txt3); align-self: center; padding: 0 4px; }
-
-.dot-blue { color: var(--blue-br); }
-.dot-red { color: var(--red-br); }
