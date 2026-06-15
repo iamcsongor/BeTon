@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { acceptInvite, declineInvite } from '@/app/actions'
 import { canCreateContests } from '@/lib/admin'
 
 export const dynamic = 'force-dynamic'
@@ -13,8 +12,10 @@ export default async function Dashboard() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  // Auto-join any contest you've been challenged to — no accept step.
+  await (supabase as any).rpc('accept_all_my_invites')
+
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-  const { data: challenges } = await supabase.rpc('get_my_challenges')
 
   const { data: parts } = await supabase
     .from('contest_participants')
@@ -40,7 +41,6 @@ export default async function Dashboard() {
   const blue = roster.find((x) => x.color === 'blue')
   const red = roster.find((x) => x.color === 'red')
   const needsSetup = !profile?.handle
-  const hasChallenges = !!challenges && challenges.length > 0
   const isAdmin = canCreateContests(profile?.email ?? user.email)
 
   return (
@@ -71,34 +71,6 @@ export default async function Dashboard() {
         )}
       </div>
 
-      {/* Incoming challenges */}
-      {hasChallenges && (
-        <>
-          <div className="muted">Challenges</div>
-          {challenges!.map((c) => (
-            <div className="card" key={c.invite_id}>
-              <div style={{ fontFamily: 'var(--tech)', fontWeight: 700 }}>
-                {c.inviter_name ?? 'Someone'} challenged you
-              </div>
-              <div className="muted" style={{ textTransform: 'none', letterSpacing: 0, margin: '6px 0 12px' }}>
-                {c.contest_name} · you&apos;d be the {c.color} corner
-              </div>
-              <div className="row" style={{ gap: 10 }}>
-                <form action={acceptInvite} style={{ flex: 1 }}>
-                  <input type="hidden" name="invite_id" value={c.invite_id} />
-                  <button className="btn">Accept</button>
-                </form>
-                <form action={declineInvite} style={{ flex: 1 }}>
-                  <input type="hidden" name="invite_id" value={c.invite_id} />
-                  <button className="btn ghost">Decline</button>
-                </form>
-              </div>
-            </div>
-          ))}
-        </>
-      )}
-
-      {/* Active contest */}
       {contest ? (
         <>
           <div className="muted">{contest.name}</div>
@@ -121,7 +93,7 @@ export default async function Dashboard() {
           </div>
           {!red && (
             <div className="muted" style={{ textTransform: 'none', letterSpacing: 0 }}>
-              Waiting for your opponent to accept the challenge.
+              Your opponent joins automatically the moment they sign in.
             </div>
           )}
           <div className="card">
@@ -143,26 +115,23 @@ export default async function Dashboard() {
             </Link>
           )}
         </>
+      ) : isAdmin ? (
+        <div className="card" style={{ textAlign: 'center' }}>
+          <div style={{ fontFamily: 'var(--tech)', fontWeight: 700, marginBottom: 8 }}>No contest yet</div>
+          <p style={{ color: 'var(--txt2)', fontSize: 14, margin: '0 0 14px', lineHeight: 1.5 }}>
+            Start a head-to-head and challenge someone by email.
+          </p>
+          <Link href="/new" className="btn" style={{ display: 'block', textDecoration: 'none' }}>
+            Create a contest
+          </Link>
+        </div>
       ) : (
-        !hasChallenges &&
-        (isAdmin ? (
-          <div className="card" style={{ textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--tech)', fontWeight: 700, marginBottom: 8 }}>No contest yet</div>
-            <p style={{ color: 'var(--txt2)', fontSize: 14, margin: '0 0 14px', lineHeight: 1.5 }}>
-              Start a head-to-head and challenge someone by email.
-            </p>
-            <Link href="/new" className="btn" style={{ display: 'block', textDecoration: 'none' }}>
-              Create a contest
-            </Link>
-          </div>
-        ) : (
-          <div className="card" style={{ textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--tech)', fontWeight: 700, marginBottom: 8 }}>Invite-only</div>
-            <p style={{ color: 'var(--txt2)', fontSize: 14, margin: 0, lineHeight: 1.5 }}>
-              BeTon is invite-only. Your contest shows up here the moment someone challenges you.
-            </p>
-          </div>
-        ))
+        <div className="card" style={{ textAlign: 'center' }}>
+          <div style={{ fontFamily: 'var(--tech)', fontWeight: 700, marginBottom: 8 }}>Invite-only</div>
+          <p style={{ color: 'var(--txt2)', fontSize: 14, margin: 0, lineHeight: 1.5 }}>
+            BeTon is invite-only. Your contest shows up here the moment someone challenges you.
+          </p>
+        </div>
       )}
     </main>
   )

@@ -14,7 +14,7 @@ This README is the project's **running log**. It captures the vision, every deci
 |---|---|
 | Vision | ✅ Proposed — see `VISION.md` |
 | Database schema | ✅ Live in Supabase |
-| Auth — magic link | 🟡 Works via Supabase's built-in mailer; custom SMTP + domain deferred |
+| Auth — Google + magic link | 🟢 Google sign-in (no email limits) + magic link |
 | User provisioning | ✅ Verified in DB (signup → profile + auto-join via invite) |
 | Onboarding — profile setup | ✅ Built (invite-only) |
 | Challenge flow — create + invite + accept/decline | ✅ Built & DB-verified |
@@ -87,10 +87,10 @@ All tables live in `public` with Row Level Security enabled. The canonical DDL i
 
 **Registration model: invite-only** (revised 2026-06-15). Sign-in is by magic link. Only **admins** (the `BETON_ADMIN_EMAILS` allowlist) can create contests and send challenges; everyone else can sign in but only takes part in contests they're challenged to.
 
-- **Register / sign in** — one magic-link step. A first-time link creates the account + profile; after that it signs you in. New users set their display name + handle on a profile-setup step.
+- **Register / sign in** — **Continue with Google** (recommended; no email limits) or a magic-link email. First sign-in creates the account + profile; new users set their display name + handle.
 - **Create a contest** — an **admin** (on the `BETON_ADMIN_EMAILS` allowlist) creates a contest (name, start date, length; rules default to the standard BeTon ruleset) and becomes the blue corner.
 - **Challenge by email** — the creator enters an opponent's email, which records an invite (the "challenge") for the red corner.
-- **Accept the challenge** — a brand-new invitee is auto-joined on first sign-in (via the `handle_new_user` trigger). An invitee who already has an account sees the challenge in-app and taps **Accept** or **Decline**.
+- **Joining is automatic** — the moment the challenged person signs in (new or existing) they're added to the contest. No accept/decline step (`accept_all_my_invites()` runs on dashboard load; new users also auto-join via the signup trigger).
 - **Security** — joining is routed through a `SECURITY DEFINER` `accept_invite` function, and direct inserts into `contest_participants` are restricted to the contest owner, so a user can only join a contest they were genuinely invited to. `get_my_challenges` lets an invitee see the contest + challenger before joining; `decline_invite` removes the challenge.
 
 ---
@@ -167,3 +167,4 @@ Push to GitHub — Vercel auto-builds the Next.js app. Make sure the two env var
 - **2026-06-15** — Decided registration model: **open platform**. Built the onboarding + challenge flow: profile-setup page, create-contest + challenge-by-email page, and in-app accept/decline of challenges on the dashboard. Added `get_my_challenges` / `accept_invite` / `decline_invite` SQL functions and restricted direct participant inserts to contest owners (joins now go only through an invite). Verified end-to-end in the DB across two simulated users (create → challenge → see → accept → both in standings); test data removed. All app files pass syntax checks.
 - **2026-06-15** — Revised to **invite-only** (admin allowlist via `BETON_ADMIN_EMAILS`); non-admins only join contests they're challenged to. Wrote the full app into the local git clone at the repo root. Magic-link login uses Supabase's built-in mailer for now; custom SMTP + domain deferred. Cleared the orphaned seed contest.
 - **2026-06-15** — First Vercel build of the app failed on a Supabase typed-client type error (`update(...)` inferred `never`). Set `typescript.ignoreBuildErrors` + `eslint.ignoreDuringBuilds` in `next.config.mjs` to ship; the queries are correct at runtime. Tech debt: realign `@supabase/*` versions with the generated types later and remove these overrides.
+- **2026-06-15** — Added **Google sign-in** (no email rate limits; both players use Gmail) alongside magic link. Made challenges **auto-join on login** and removed the Accept/Decline step.
