@@ -532,7 +532,7 @@ function DailyScreen({ state, onSetGoal, editDate, setEditDate }: any) {
   for (let ts = startTs; ts >= endTs; ts -= MS_DAY) dates.push(new Date(ts).toISOString().slice(0, 10))
   let lastMonth: string | null = null
   return (
-    <>
+    <div className="scroll feed">
       <div className="day-head">
         <div className="seg"><div className={'seg-opt ' + color + ' on'}><span>●</span> {player}</div></div>
         <div className="goal-inline">
@@ -546,8 +546,7 @@ function DailyScreen({ state, onSetGoal, editDate, setEditDate }: any) {
           </div>
         </div>
       </div>
-      <div className="scroll feed">
-        {dates.map((dt) => {
+      {dates.map((dt) => {
           const f = fmtDate(dt)
           const showMonth = f.mon !== lastMonth
           lastMonth = f.mon
@@ -559,8 +558,7 @@ function DailyScreen({ state, onSetGoal, editDate, setEditDate }: any) {
           )
         })}
         <div className="feed-foot">◇ Contest start · {fmtDate(weekDates(C, 1)[0]).d} {fmtDate(weekDates(C, 1)[0]).mon} 2026</div>
-      </div>
-    </>
+    </div>
   )
 }
 
@@ -709,15 +707,20 @@ export default function BetonApp() {
   useEffect(() => {
     const el = appRef.current
     if (!el) return
-    let last = 0
+    let last = 0, ticking = false
     const onScroll = (e: Event) => {
       const t = e.target as HTMLElement
       if (!t || typeof t.scrollTop !== 'number') return
-      const y = t.scrollTop
-      if (y <= 0) setChromeHidden(false)
-      else if (y > last + 6 && y > 48) setChromeHidden(true)
-      else if (y < last - 6) setChromeHidden(false)
-      last = y < 0 ? 0 : y
+      const y = Math.max(0, t.scrollTop)
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        if (y < 60) setChromeHidden(false)
+        else if (y > last + 4) setChromeHidden(true)
+        else if (y < last - 4) setChromeHidden(false)
+        last = y
+        ticking = false
+      })
     }
     el.addEventListener('scroll', onScroll, true)
     return () => el.removeEventListener('scroll', onScroll, true)
@@ -774,11 +777,11 @@ export default function BetonApp() {
   const dark = theme === 'dark'
   const abbr = state.players.map((n: string) => (n || '?').slice(0, 3).toUpperCase()).join('·')
   const selfColor = state.color[state.selfName] || 'blue'
-  const go = (r: string) => setRoute(r)
-  const chromeWrap = (hidden: boolean): any => ({ maxHeight: hidden ? 0 : 200, opacity: hidden ? 0 : 1, overflow: 'hidden', transition: 'max-height .28s ease, opacity .18s ease', flexShrink: 0 })
+  const go = (r: string) => { setChromeHidden(false); setRoute(r) }
+  const chromeWrap = (_hidden: boolean): any => ({})
 
   return (
-    <div className="app" data-theme={theme} style={{ minHeight: '100dvh' }} ref={appRef}>
+    <div className={'app' + (chromeHidden ? ' chrome-hidden' : '')} data-theme={theme} style={{ height: '100dvh' }} ref={appRef}>
       <div style={chromeWrap(chromeHidden)}>
         <div className="top">
           <div className="wordmark">
