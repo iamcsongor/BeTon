@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
@@ -117,6 +117,8 @@ function Icon({ name, size = 20, stroke = 2, style }: any) {
     edit: <><path d="M4 20h4L19 9l-4-4L4 16v4z" /><path d="M14 6l4 4" /></>,
     target: <><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3" /></>,
     logout: <><path d="M14 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3" /><path d="M9 12h11M16 8l4 4-4 4" /></>,
+    user: <><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></>,
+    camera: <><rect x="3" y="7" width="18" height="13" rx="2.5" /><path d="M8.5 7L10 4.5h4L15.5 7" /><circle cx="12" cy="13.5" r="3.2" /></>,
   }
   return <svg {...p}>{paths[name]}</svg>
 }
@@ -582,13 +584,89 @@ function TabBar({ route, go }: any) {
 }
 
 /* ---------- app shell + data ---------- */
+
+function ProfileSheet({ state, supabase, onAvatar, onLogout, onClose }: any) {
+  const player = state.selfName
+  const color = state.color[player] || 'blue'
+  const [name, setName] = useState(player)
+  const [avatar, setAvatar] = useState(state.selfAvatar || '')
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  async function pickFile(e: any) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setBusy(true); setMsg('Uploading…')
+    const ext = (file.name.split('.').pop() || 'png').toLowerCase()
+    const path = state.selfId + '/avatar-' + Date.now() + '.' + ext
+    const up = await supabase.storage.from('avatars').upload(path, file, { upsert: true, cacheControl: '3600' })
+    if (up.error) { setMsg(up.error.message); setBusy(false); return }
+    const pub = supabase.storage.from('avatars').getPublicUrl(path)
+    const url = pub.data.publicUrl
+    await (supabase.from('profiles') as any).update({ avatar_url: url }).eq('id', state.selfId)
+    setAvatar(url); onAvatar(url); setBusy(false); setMsg('Photo updated')
+  }
+  async function save() {
+    const nm = name.trim()
+    if (!nm) return
+    setBusy(true); setMsg('Saving…')
+    await (supabase.from('profiles') as any).update({ display_name: nm }).eq('id', state.selfId)
+    window.location.reload()
+  }
+
+  return (
+    <div className="sheet-scrim" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-grab" />
+        <div className="sheet-h">
+          <div className="sheet-title">Profile</div>
+          <button className="icon-btn" onClick={onClose}><Icon name="x" size={18} /></button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '4px 0 8px' }}>
+          <div style={{ width: 96, height: 96, borderRadius: '50%', overflow: 'hidden', border: '2px solid ' + (color === 'blue' ? 'var(--blue-br)' : 'var(--red-br)'), background: 'var(--bg3)', display: 'grid', placeItems: 'center' }}>
+            {avatar
+              ? <img src={avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <span style={{ fontFamily: 'var(--fontTech)', fontWeight: 800, fontSize: 34, color: 'var(--txt)' }}>{(name || '?')[0]?.toUpperCase()}</span>}
+          </div>
+          <label className="btn-ghost" style={{ cursor: 'pointer', width: 'auto', padding: '9px 14px' }}>
+            <Icon name="camera" size={14} style={{ verticalAlign: -2, marginRight: 6 }} /> Change photo
+            <input type="file" accept="image/*" onChange={pickFile} style={{ display: 'none' }} disabled={busy} />
+          </label>
+        </div>
+
+        <div className="field">
+          <div className="field-h"><span className="lbl">Display name</span></div>
+          <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+        </div>
+
+        {msg && <div style={{ color: 'var(--good)', fontSize: 12, textAlign: 'center', marginBottom: 4 }}>{msg}</div>}
+
+        <button className={'btn-primary ' + color} onClick={save} disabled={busy}>Save</button>
+        <button className="btn-ghost" onClick={onLogout}><Icon name="logout" size={14} style={{ verticalAlign: -2, marginRight: 6 }} /> Log out</button>
+      </div>
+    </div>
+  )
+}
+
 export default function BetonApp() {
   const router = useRouter()
+  const supabase = createClient()
   const [state, setState] = useState<any>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'nocontest'>('loading')
   const [route, setRoute] = useState('vs')
   const [editDate, setEditDate] = useState<string | null>(null)
-  const supabase = createClient()
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [chromeHidden, setChromeHidden] = useState(false)
+  const appRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    try {
+      const t = (localStorage.getItem('beton-theme') as any) || 'light'
+      setTheme(t); document.documentElement.dataset.theme = t
+    } catch {}
+  }, [])
 
   useEffect(() => {
     let alive = true
@@ -596,19 +674,17 @@ export default function BetonApp() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
       const { data: mine } = await supabase
-        .from('contest_participants')
-        .select('color, contest:contests(*)')
-        .eq('profile_id', user.id).limit(1)
+        .from('contest_participants').select('color, contest:contests(*)').eq('profile_id', user.id).limit(1)
       const contest = (mine?.[0] as any)?.contest
       if (!contest) { if (alive) setStatus('nocontest'); return }
       const { data: roster } = await supabase
-        .from('contest_participants').select('color, profile:profiles(id, display_name)').eq('contest_id', contest.id)
+        .from('contest_participants').select('color, profile:profiles(id, display_name, avatar_url)').eq('contest_id', contest.id)
       const blue = (roster || []).find((r: any) => r.color === 'blue') as any
       const red = (roster || []).find((r: any) => r.color === 'red') as any
       const blueName = blue?.profile?.display_name || 'Blue'
       const redName = red?.profile?.display_name || 'Awaiting'
-      const nameById: any = {}
-      ;(roster || []).forEach((r: any) => { nameById[r.profile.id] = r.profile.display_name })
+      const nameById: any = {}, avatarById: any = {}
+      ;(roster || []).forEach((r: any) => { nameById[r.profile.id] = r.profile.display_name; avatarById[r.profile.id] = r.profile.avatar_url })
       const { data: logs } = await supabase.from('daily_logs').select('*').eq('contest_id', contest.id)
       const days: any = { [blueName]: {}, [redName]: {} }
       ;(logs || []).forEach((l: any) => {
@@ -624,11 +700,28 @@ export default function BetonApp() {
       const currentWeek = Math.min(contest.num_weeks, Math.max(1, Math.floor(elapsed / 7) + 1))
       const C = { weeks: contest.num_weeks, weeklyGym: contest.weekly_gym_target, weeklyCal: contest.weekly_calorie_cap, cheatTotal: contest.cheat_total_allowance, finish: contest.end_date, start: contest.start_date, today, currentWeek, checkins: contest.checkin_weeks || [5, 10, 15], name: contest.name }
       if (!alive) return
-      setState({ C, days, goals, players: [blueName, redName], color: { [blueName]: 'blue', [redName]: 'red' }, selfName: nameById[user.id] || blueName, selfId: user.id, contestId: contest.id, theme: 'dark' })
+      setState({ C, days, goals, players: [blueName, redName], color: { [blueName]: 'blue', [redName]: 'red' }, selfName: nameById[user.id] || blueName, selfId: user.id, selfAvatar: avatarById[user.id] || '', contestId: contest.id })
       setStatus('ready')
     })()
     return () => { alive = false }
   }, [])
+
+  useEffect(() => {
+    const el = appRef.current
+    if (!el) return
+    let last = 0
+    const onScroll = (e: Event) => {
+      const t = e.target as HTMLElement
+      if (!t || typeof t.scrollTop !== 'number') return
+      const y = t.scrollTop
+      if (y <= 0) setChromeHidden(false)
+      else if (y > last + 6 && y > 48) setChromeHidden(true)
+      else if (y < last - 6) setChromeHidden(false)
+      last = y < 0 ? 0 : y
+    }
+    el.addEventListener('scroll', onScroll, true)
+    return () => el.removeEventListener('scroll', onScroll, true)
+  }, [status])
 
   async function onSaveDay(date: string, draft: any) {
     const muscles = draft.gym ? draft.muscles : []
@@ -653,15 +746,22 @@ export default function BetonApp() {
       return { ...p, goals: { ...p.goals, [p.selfName]: list } }
     })
   }
+  function toggleTheme() {
+    setTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark'
+      try { localStorage.setItem('beton-theme', next) } catch {}
+      document.documentElement.dataset.theme = next
+      return next
+    })
+  }
   async function logout() { await supabase.auth.signOut(); router.push('/login') }
-  const toggleTheme = () => setState((p: any) => ({ ...p, theme: p.theme === 'dark' ? 'light' : 'dark' }))
 
   if (status === 'loading') {
-    return <div data-theme="dark" style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', background: 'var(--bg)', color: 'var(--txt3)', fontFamily: 'var(--fontMono)' }}>Loading…</div>
+    return <div data-theme={theme} style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', background: 'var(--bg)', color: 'var(--txt3)', fontFamily: 'var(--fontMono)' }}>Loading…</div>
   }
   if (status === 'nocontest') {
     return (
-      <div data-theme="dark" style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', background: 'var(--bg)', color: 'var(--txt)', fontFamily: 'var(--fontMono)', padding: 24, textAlign: 'center' }}>
+      <div data-theme={theme} style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', background: 'var(--bg)', color: 'var(--txt)', fontFamily: 'var(--fontMono)', padding: 24, textAlign: 'center' }}>
         <div>
           <div className="brand" style={{ marginBottom: 12 }}>BE<span className="t">T</span>ON</div>
           <p style={{ color: 'var(--txt2)' }}>You&apos;re not in a contest yet. You&apos;ll appear here the moment someone challenges you.</p>
@@ -671,20 +771,28 @@ export default function BetonApp() {
     )
   }
 
-  const dark = state.theme === 'dark'
+  const dark = theme === 'dark'
   const abbr = state.players.map((n: string) => (n || '?').slice(0, 3).toUpperCase()).join('·')
+  const selfColor = state.color[state.selfName] || 'blue'
   const go = (r: string) => setRoute(r)
+  const chromeWrap = (hidden: boolean): any => ({ maxHeight: hidden ? 0 : 200, opacity: hidden ? 0 : 1, overflow: 'hidden', transition: 'max-height .28s ease, opacity .18s ease', flexShrink: 0 })
 
   return (
-    <div className="app" data-theme={state.theme} style={{ minHeight: '100dvh' }}>
-      <div className="top">
-        <div className="wordmark">
-          <span className="be">BE</span><span className="flick-t">T</span><span className="ton">ON</span>
-          <span className="dot">&nbsp;/ {abbr}</span>
-        </div>
-        <div className="top-actions">
-          <button className="icon-btn" onClick={toggleTheme} aria-label="theme"><Icon name={dark ? 'moon' : 'sun'} size={18} /></button>
-          <button className="icon-btn" onClick={logout} aria-label="log out"><Icon name="logout" size={18} /></button>
+    <div className="app" data-theme={theme} style={{ minHeight: '100dvh' }} ref={appRef}>
+      <div style={chromeWrap(chromeHidden)}>
+        <div className="top">
+          <div className="wordmark">
+            <span className="be">BE</span><span className="flick-t">T</span><span className="ton">ON</span>
+            <span className="dot">&nbsp;/ {abbr}</span>
+          </div>
+          <div className="top-actions">
+            <button className="icon-btn" onClick={toggleTheme} aria-label="theme"><Icon name={dark ? 'moon' : 'sun'} size={18} /></button>
+            <button className={'icon-btn avatar-btn ' + selfColor} onClick={() => setProfileOpen(true)} aria-label="profile">
+              {state.selfAvatar
+                ? <img src={state.selfAvatar} alt="" style={{ width: '100%', height: '100%', borderRadius: 'inherit', objectFit: 'cover' }} />
+                : (state.selfName || '?')[0]?.toUpperCase()}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -692,9 +800,12 @@ export default function BetonApp() {
       {route === 'weeks' && <WeeksScreen state={state} />}
       {route === 'daily' && <DailyScreen state={state} onSetGoal={onSetGoal} editDate={editDate} setEditDate={setEditDate} />}
 
-      <TabBar route={route} go={go} />
+      <div style={chromeWrap(chromeHidden)}>
+        <TabBar route={route} go={go} />
+      </div>
 
       {editDate && <EditSheet key={editDate} state={state} date={editDate} onSave={onSaveDay} onClose={() => setEditDate(null)} />}
+      {profileOpen && <ProfileSheet state={state} supabase={supabase} onAvatar={(url: string) => setState((p: any) => ({ ...p, selfAvatar: url }))} onLogout={logout} onClose={() => setProfileOpen(false)} />}
     </div>
   )
 }

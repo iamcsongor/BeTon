@@ -10,12 +10,20 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#0a0b0f',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="dark">
+    <html lang="en" data-theme="light" suppressHydrationWarning>
+      <head>
+        {/* No-flash theme: default light, honor saved preference before paint. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var t=localStorage.getItem('beton-theme')||'light';document.documentElement.dataset.theme=t}catch(e){}",
+          }}
+        />
+      </head>
       <body>{children}</body>
     </html>
   )
