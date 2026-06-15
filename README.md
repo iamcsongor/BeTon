@@ -170,3 +170,4 @@ Push to GitHub — Vercel auto-builds the Next.js app. Make sure the two env var
 - **2026-06-15** — Added **Google sign-in** (no email rate limits; both players use Gmail) alongside magic link. Made challenges **auto-join on login** and removed the Accept/Decline step.
 - **2026-06-15** — Built the **daily logging screen** (`/log`): record calories, protein, junk, gym + muscle groups, and cheat per day (any date), upserting to `daily_logs`. Dashboard now has a **Log today** button. Scoreboard views fill from these logs.
 - **2026-06-15** — Ported the real design: brought in `beton.css` verbatim and rebuilt the **Versus / Rounds / Log** screens + tabbed app shell from the prototype (`screen-*.jsx`) into `app/dashboard/BetonApp.tsx`, wired to live data. The plain placeholder pages are gone; `/log` redirects into the Log tab.
+- **2026-06-15** — Design port deployed to production (Versus / Rounds / Log live on the real beton.css design).
