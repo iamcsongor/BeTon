@@ -1,0 +1,11 @@
+node_modules
+.next
+out
+.env*.local
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+
+# Leftover standalone copy from setup — the app lives at the repo root. Safe to delete.
+beton-app/

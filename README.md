@@ -14,9 +14,9 @@ This README is the project's **running log**. It captures the vision, every deci
 |---|---|
 | Vision | ✅ Proposed — see `VISION.md` |
 | Database schema | ✅ Live in Supabase |
-| Auth — magic link | 🟡 Scaffolded — needs env vars + Supabase email config |
+| Auth — magic link | 🟡 Works via Supabase's built-in mailer; custom SMTP + domain deferred |
 | User provisioning | ✅ Verified in DB (signup → profile + auto-join via invite) |
-| Onboarding — profile setup | ✅ Built (open registration) |
+| Onboarding — profile setup | ✅ Built (invite-only) |
 | Challenge flow — create + invite + accept/decline | ✅ Built & DB-verified |
 | Daily logging → DB | ⬜ Planned |
 | Live scoreboard from DB | ⬜ Planned |
@@ -85,10 +85,10 @@ All tables live in `public` with Row Level Security enabled. The canonical DDL i
 
 ## Registration & challenge flow
 
-**Registration model: open platform** (decided 2026-06-15). Anyone can sign up; each contest stays private to its participants.
+**Registration model: invite-only** (revised 2026-06-15). Sign-in is by magic link. Only **admins** (the `BETON_ADMIN_EMAILS` allowlist) can create contests and send challenges; everyone else can sign in but only takes part in contests they're challenged to.
 
 - **Register / sign in** — one magic-link step. A first-time link creates the account + profile; after that it signs you in. New users set their display name + handle on a profile-setup step.
-- **Create a contest** — any signed-in user creates a contest (name, start date, length; rules default to the standard BeTon ruleset) and becomes the blue corner.
+- **Create a contest** — an **admin** (on the `BETON_ADMIN_EMAILS` allowlist) creates a contest (name, start date, length; rules default to the standard BeTon ruleset) and becomes the blue corner.
 - **Challenge by email** — the creator enters an opponent's email, which records an invite (the "challenge") for the red corner.
 - **Accept the challenge** — a brand-new invitee is auto-joined on first sign-in (via the `handle_new_user` trigger). An invitee who already has an account sees the challenge in-app and taps **Accept** or **Decline**.
 - **Security** — joining is routed through a `SECURITY DEFINER` `accept_invite` function, and direct inserts into `contest_participants` are restricted to the contest owner, so a user can only join a contest they were genuinely invited to. `get_my_challenges` lets an invitee see the contest + challenger before joining; `decline_invite` removes the challenge.
@@ -98,11 +98,12 @@ All tables live in `public` with Row Level Security enabled. The canonical DDL i
 ## Setup
 
 ### 1. Environment variables
-Copy `beton-app/.env.local.example` to `beton-app/.env.local` (already filled with this project's public values), and set the same two in Vercel → Project → Settings → Environment Variables:
+Copy `.env.local.example` to `.env.local` (already filled with this project's public values), and set the same three in Vercel → Project → Settings → Environment Variables:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://tsnukavodlfpswqjrrhn.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_2RmDoM-L-yQNVqOqpWUFpw_uykwoNFt
+BETON_ADMIN_EMAILS=iamcsongor@gmail.com
 ```
 
 ### 2. Supabase Auth config (one-time, in the dashboard)
@@ -114,7 +115,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_2RmDoM-L-yQNVqOqpWUFpw_uykwoNFt
 
 ### 3. Run locally
 ```
-cd beton-app
+cd BeTon
 npm install
 npm run dev      # http://localhost:3000
 ```
@@ -131,6 +132,12 @@ Push to GitHub — Vercel auto-builds the Next.js app. Make sure the two env var
 - **Prototype → live architecture?** → **Next.js** on Vercel. Chosen after comparing against a CDN-augmented mockup and a Vite SPA; the multi-user goal favors a framework with secure server-side logic, and Next.js is Vercel-native.
 - **Data model scope?** → **Full multi-user platform** (any number of users, multiple contests). Built generally; seeded with just Csongor + Peter for now.
 - **Assumed contest parameters** (taken from the prototype — please confirm or adjust): 15 weeks, ≥ 4 gym sessions/week, ≤ 14,000 kcal/week, 10 cheat meals each, default daily goal 2,000 kcal, check-ins at weeks 5/10/15, contest runs **15 Jun → 26 Sep 2026**.
+
+### 2026-06-15 — Onboarding, challenges & registration
+- **Challenge flow:** an admin creates a contest and challenges an opponent by email → an invite. New invitees auto-join on first sign-in; existing users get an in-app Accept/Decline. Joining is routed through a secure `accept_invite` function so a user can only join a contest they were actually invited to.
+- **Registration → invite-only.** Only admins on the `BETON_ADMIN_EMAILS` allowlist can create contests and send challenges; everyone else can sign in but only joins contests they're challenged to.
+- **No custom domain yet** → magic-link login uses Supabase's built-in mailer for now (low volume, may land in spam). Custom SMTP (Resend/Postmark/SES) + a domain are deferred; login already works without them.
+- **App lives at the repo root** so Vercel auto-detects Next.js with no root-directory setting; the prototype stays alongside as the design reference.
 
 ---
 
@@ -158,3 +165,4 @@ Push to GitHub — Vercel auto-builds the Next.js app. Make sure the two env var
 - **2026-06-15** — Initial Supabase schema applied (7 tables, RLS policies, `handle_new_user` provisioning trigger, 4 progress views); function privileges hardened per the security advisor. Vision proposed (`VISION.md`). Next.js onboarding scaffold added (`beton-app/`). Contest + Csongor's invite seeded.
 - **2026-06-15** — Verified at the database level: a simulated signup created a profile, auto-joined the contest via its invite (red corner), and the scoring views computed a full week correctly (4 gym + under cap = 2 points, round complete). All test data removed afterward; Csongor's invite remains intact and unaccepted. Next.js scaffold passes a syntax/transpile check (full type-check runs on Vercel build).
 - **2026-06-15** — Decided registration model: **open platform**. Built the onboarding + challenge flow: profile-setup page, create-contest + challenge-by-email page, and in-app accept/decline of challenges on the dashboard. Added `get_my_challenges` / `accept_invite` / `decline_invite` SQL functions and restricted direct participant inserts to contest owners (joins now go only through an invite). Verified end-to-end in the DB across two simulated users (create → challenge → see → accept → both in standings); test data removed. All app files pass syntax checks.
+- **2026-06-15** — Revised to **invite-only** (admin allowlist via `BETON_ADMIN_EMAILS`); non-admins only join contests they're challenged to. Wrote the full app into the local git clone at the repo root. Magic-link login uses Supabase's built-in mailer for now; custom SMTP + domain deferred. Cleared the orphaned seed contest.

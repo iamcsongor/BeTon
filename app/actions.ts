@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { canCreateContests } from '@/lib/admin'
 
 // --- Profile setup ---------------------------------------------------------
 export async function updateProfile(formData: FormData) {
@@ -38,6 +39,7 @@ export async function createContestAndChallenge(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+  if (!canCreateContests(user.email)) redirect('/dashboard')
 
   const name = String(formData.get('name') ?? '').trim() || 'BeTon contest'
   const opponentEmail = String(formData.get('opponent_email') ?? '').trim().toLowerCase()

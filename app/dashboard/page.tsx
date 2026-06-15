@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { acceptInvite, declineInvite } from '@/app/actions'
+import { canCreateContests } from '@/lib/admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,6 +41,7 @@ export default async function Dashboard() {
   const red = roster.find((x) => x.color === 'red')
   const needsSetup = !profile?.handle
   const hasChallenges = !!challenges && challenges.length > 0
+  const isAdmin = canCreateContests(profile?.email ?? user.email)
 
   return (
     <main className="wrap" style={{ gap: 16 }}>
@@ -135,22 +137,32 @@ export default async function Dashboard() {
           <div className="muted" style={{ textAlign: 'center' }}>
             Daily logging &amp; live scoreboard — coming next
           </div>
-          <Link href="/new" className="muted" style={{ textAlign: 'center', textDecoration: 'none' }}>
-            + New contest
-          </Link>
+          {isAdmin && (
+            <Link href="/new" className="muted" style={{ textAlign: 'center', textDecoration: 'none' }}>
+              + New contest
+            </Link>
+          )}
         </>
       ) : (
-        !hasChallenges && (
+        !hasChallenges &&
+        (isAdmin ? (
           <div className="card" style={{ textAlign: 'center' }}>
             <div style={{ fontFamily: 'var(--tech)', fontWeight: 700, marginBottom: 8 }}>No contest yet</div>
             <p style={{ color: 'var(--txt2)', fontSize: 14, margin: '0 0 14px', lineHeight: 1.5 }}>
-              Start a head-to-head and challenge a friend by email.
+              Start a head-to-head and challenge someone by email.
             </p>
             <Link href="/new" className="btn" style={{ display: 'block', textDecoration: 'none' }}>
               Create a contest
             </Link>
           </div>
-        )
+        ) : (
+          <div className="card" style={{ textAlign: 'center' }}>
+            <div style={{ fontFamily: 'var(--tech)', fontWeight: 700, marginBottom: 8 }}>Invite-only</div>
+            <p style={{ color: 'var(--txt2)', fontSize: 14, margin: 0, lineHeight: 1.5 }}>
+              BeTon is invite-only. Your contest shows up here the moment someone challenges you.
+            </p>
+          </div>
+        ))
       )}
     </main>
   )

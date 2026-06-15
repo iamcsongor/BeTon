@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createContestAndChallenge } from '@/app/actions'
+import { canCreateContests } from '@/lib/admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +15,7 @@ export default async function NewContest({
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+  if (!canCreateContests(user.email)) redirect('/dashboard')
 
   const today = new Date().toISOString().slice(0, 10)
 
