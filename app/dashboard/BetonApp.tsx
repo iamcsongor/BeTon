@@ -721,7 +721,8 @@ export default function BetonApp() {
       const goals: any = { [blueName]: [], [redName]: [] }
       ;(goalRows || []).forEach((g: any) => { const nm = nameById[g.profile_id]; if (!nm || !goals[nm]) return; goals[nm].push({ from: g.effective_from, value: g.goal_calories }) })
       ;[blueName, redName].forEach((nm) => { if (!goals[nm].length) goals[nm] = [{ from: contest.start_date, value: contest.default_daily_calorie_goal }]; goals[nm].sort((x: any, y: any) => (x.from < y.from ? -1 : 1)) })
-      const today = new Date().toISOString().slice(0, 10)
+      const now = new Date()
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
       const elapsed = Math.max(0, Math.floor((Date.parse(today + 'T00:00:00Z') - Date.parse(contest.start_date + 'T00:00:00Z')) / MS_DAY))
       const currentWeek = Math.min(contest.num_weeks, Math.max(1, Math.floor(elapsed / 7) + 1))
       const C = { weeks: contest.num_weeks, weeklyGym: contest.weekly_gym_target, weeklyCal: contest.weekly_calorie_cap, cheatTotal: contest.cheat_total_allowance, finish: contest.end_date, start: contest.start_date, today, currentWeek, checkins: contest.checkin_weeks || [5, 10, 15], name: contest.name }
