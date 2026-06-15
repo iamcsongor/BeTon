@@ -20,6 +20,7 @@ This README is the project's **running log**. It captures the vision, every deci
 | Challenge flow — create + invite + accept/decline | ✅ Built & DB-verified |
 | Daily logging → DB | ✅ Built — `/log` (calories, protein, junk, gym + muscles, cheat) |
 | Live scoreboard from DB | ✅ Versus + Rounds screens read live from logs |
+| Observer (view-only) | ✅ Built — shareable, revocable link; DB-enforced read-only |
 | Check-ins (photos + review) | ⬜ Planned |
 
 **Current phase: Step 1 — user onboarding & provisioning.**
@@ -174,3 +175,4 @@ Push to GitHub — Vercel auto-builds the Next.js app. Make sure the two env var
 - **2026-06-15** — UX: header + tab bar now hide on scroll-down and reveal on scroll-up (more vertical space); theme defaults to **light** and the choice is saved (localStorage, no-flash); the log-out icon is now a **profile** button opening a sheet to edit name + photo (avatars stored in a public Supabase Storage bucket). Log out lives inside that sheet.
 - **2026-06-15** — Reworked the scroll-hide so it's smooth: header + tab bar are absolute overlays that slide via a CSS `transform` (no layout reflow), and the scroll handler is throttled to one update per animation frame — fixes the earlier flicker. Log sub-header now lives inside the scroller.
 - **2026-06-15** — Polish: frosted-glass translucent backdrop on the header + tab bar (blur), and the top-right avatar is now a clean circular photo sized to match the theme button.
+- **2026-06-15** — Added an **observer (view-only) role**. A revocable **share link** (`/join/<token>`) lets anyone sign in and watch a contest; observers see **only the scoreboard** (no Log/Rounds), and **read-only is enforced in Postgres** (writing logs/goals requires the `competitor` role — verified: observer insert blocked, competitor insert allowed). Competitors get Copy/Revoke link controls in the profile sheet. Login carries `?next` so the link works through sign-in. Note: observers can currently still read raw logs via the API (members) — can be tightened to aggregate-only if desired.

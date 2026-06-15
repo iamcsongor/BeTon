@@ -12,9 +12,10 @@ export default function LoginPage() {
   async function google() {
     setError(null)
     const supabase = createClient()
+    const next = new URLSearchParams(window.location.search).get('next') || '/dashboard'
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
     })
     if (error) setError(error.message)
   }
@@ -24,9 +25,10 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
     const supabase = createClient()
+    const next = new URLSearchParams(window.location.search).get('next') || '/dashboard'
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/confirm?next=${encodeURIComponent(next)}` },
     })
     setLoading(false)
     if (error) setError(error.message)

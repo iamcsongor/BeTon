@@ -590,6 +590,8 @@ function ProfileSheet({ state, supabase, onAvatar, onLogout, onClose }: any) {
   const [avatar, setAvatar] = useState(state.selfAvatar || '')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
+  const [link, setLink] = useState('')
+  const isObserver = state.isObserver
 
   async function pickFile(e: any) {
     const file = e.target.files?.[0]
@@ -610,6 +612,20 @@ function ProfileSheet({ state, supabase, onAvatar, onLogout, onClose }: any) {
     setBusy(true); setMsg('Saving…')
     await (supabase.from('profiles') as any).update({ display_name: nm }).eq('id', state.selfId)
     window.location.reload()
+  }
+  async function copyLink() {
+    setBusy(true); setMsg('')
+    const { data, error } = await (supabase as any).rpc('get_share_token', { p_contest_id: state.contestId })
+    setBusy(false)
+    if (error) { setMsg(error.message); return }
+    const url = window.location.origin + '/join/' + data
+    setLink(url)
+    try { await navigator.clipboard.writeText(url); setMsg('Viewer link copied') } catch { setMsg('Link ready below') }
+  }
+  async function revokeLink() {
+    setBusy(true); setMsg('')
+    await (supabase as any).rpc('revoke_share_token', { p_contest_id: state.contestId })
+    setBusy(false); setLink(''); setMsg('Old link revoked')
   }
 
   return (
@@ -637,6 +653,17 @@ function ProfileSheet({ state, supabase, onAvatar, onLogout, onClose }: any) {
           <div className="field-h"><span className="lbl">Display name</span></div>
           <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
         </div>
+
+        {!isObserver && (
+          <div className="field">
+            <div className="field-h"><span className="lbl">Viewer link · read-only scoreboard</span></div>
+            <div className="row" style={{ gap: 8 }}>
+              <button className="btn-ghost" style={{ flex: 1, width: 'auto' }} onClick={copyLink} disabled={busy}>Copy link</button>
+              <button className="btn-ghost" style={{ flex: 1, width: 'auto' }} onClick={revokeLink} disabled={busy}>Revoke</button>
+            </div>
+            {link && <div style={{ fontSize: 11, color: 'var(--txt3)', wordBreak: 'break-all', marginTop: 8 }}>{link}</div>}
+          </div>
+        )}
 
         {msg && <div style={{ color: 'var(--good)', fontSize: 12, textAlign: 'center', marginBottom: 4 }}>{msg}</div>}
 
@@ -672,8 +699,9 @@ export default function BetonApp() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
       const { data: mine } = await supabase
-        .from('contest_participants').select('color, contest:contests(*)').eq('profile_id', user.id).limit(1)
+        .from('contest_participants').select('color, role, contest:contests(*)').eq('profile_id', user.id).limit(1)
       const contest = (mine?.[0] as any)?.contest
+      const myRole = (mine?.[0] as any)?.role || 'competitor'
       if (!contest) { if (alive) setStatus('nocontest'); return }
       const { data: roster } = await supabase
         .from('contest_participants').select('color, profile:profiles(id, display_name, avatar_url)').eq('contest_id', contest.id)
@@ -698,7 +726,7 @@ export default function BetonApp() {
       const currentWeek = Math.min(contest.num_weeks, Math.max(1, Math.floor(elapsed / 7) + 1))
       const C = { weeks: contest.num_weeks, weeklyGym: contest.weekly_gym_target, weeklyCal: contest.weekly_calorie_cap, cheatTotal: contest.cheat_total_allowance, finish: contest.end_date, start: contest.start_date, today, currentWeek, checkins: contest.checkin_weeks || [5, 10, 15], name: contest.name }
       if (!alive) return
-      setState({ C, days, goals, players: [blueName, redName], color: { [blueName]: 'blue', [redName]: 'red' }, selfName: nameById[user.id] || blueName, selfId: user.id, selfAvatar: avatarById[user.id] || '', contestId: contest.id })
+      setState({ C, days, goals, players: [blueName, redName], color: { [blueName]: 'blue', [redName]: 'red' }, selfName: nameById[user.id] || blueName, selfId: user.id, selfAvatar: avatarById[user.id] || '', contestId: contest.id, isObserver: myRole === 'observer' })
       setStatus('ready')
     })()
     return () => { alive = false }
@@ -786,7 +814,7 @@ export default function BetonApp() {
         <div className="top">
           <div className="wordmark">
             <span className="be">BE</span><span className="flick-t">T</span><span className="ton">ON</span>
-            <span className="dot">&nbsp;/ {abbr}</span>
+            <span className="dot">&nbsp;/ {abbr}{state.isObserver ? ' · VIEWER' : ''}</span>
           </div>
           <div className="top-actions">
             <button className="icon-btn" onClick={toggleTheme} aria-label="theme"><Icon name={dark ? 'moon' : 'sun'} size={18} /></button>
@@ -800,12 +828,14 @@ export default function BetonApp() {
       </div>
 
       {route === 'vs' && <VSScreen state={state} go={go} />}
-      {route === 'weeks' && <WeeksScreen state={state} />}
-      {route === 'daily' && <DailyScreen state={state} onSetGoal={onSetGoal} editDate={editDate} setEditDate={setEditDate} />}
+      {route === 'weeks' && !state.isObserver && <WeeksScreen state={state} />}
+      {route === 'daily' && !state.isObserver && <DailyScreen state={state} onSetGoal={onSetGoal} editDate={editDate} setEditDate={setEditDate} />}
 
-      <div style={chromeWrap(chromeHidden)}>
-        <TabBar route={route} go={go} />
-      </div>
+      {!state.isObserver && (
+        <div style={chromeWrap(chromeHidden)}>
+          <TabBar route={route} go={go} />
+        </div>
+      )}
 
       {editDate && <EditSheet key={editDate} state={state} date={editDate} onSave={onSaveDay} onClose={() => setEditDate(null)} />}
       {profileOpen && <ProfileSheet state={state} supabase={supabase} onAvatar={(url: string) => setState((p: any) => ({ ...p, selfAvatar: url }))} onLogout={logout} onClose={() => setProfileOpen(false)} />}
