@@ -11,5 +11,6 @@ export default async function Page() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
   await (supabase as any).rpc('accept_all_my_invites')
+  await (supabase as any).rpc('record_view')
   return <BetonApp />
 }

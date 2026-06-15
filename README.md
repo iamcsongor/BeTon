@@ -21,6 +21,7 @@ This README is the project's **running log**. It captures the vision, every deci
 | Daily logging → DB | ✅ Built — `/log` (calories, protein, junk, gym + muscles, cheat) |
 | Live scoreboard from DB | ✅ Versus + Rounds screens read live from logs |
 | Observer (view-only) | ✅ Built — shareable, revocable link; DB-enforced read-only |
+| Viewer analytics | ✅ `view_events` + `v_viewer_activity` (query in Supabase) |
 | Check-ins (photos + review) | ⬜ Planned |
 
 **Current phase: Step 1 — user onboarding & provisioning.**
@@ -93,6 +94,23 @@ All tables live in `public` with Row Level Security enabled. The canonical DDL i
 - **Challenge by email** — the creator enters an opponent's email, which records an invite (the "challenge") for the red corner.
 - **Joining is automatic** — the moment the challenged person signs in (new or existing) they're added to the contest. No accept/decline step (`accept_all_my_invites()` runs on dashboard load; new users also auto-join via the signup trigger).
 - **Security** — joining is routed through a `SECURITY DEFINER` `accept_invite` function, and direct inserts into `contest_participants` are restricted to the contest owner, so a user can only join a contest they were genuinely invited to. `get_my_challenges` lets an invitee see the contest + challenger before joining; `decline_invite` removes the challenge.
+
+---
+
+## Viewer analytics
+
+Every dashboard load is logged **server-side** (in `app/dashboard/page.tsx` via the `record_view()` function), throttled to **one event per viewer per ~30 minutes** so it counts visits, not refreshes. Covers competitors and observers (the `role` is stored on each row). No in-app UI — query it in Supabase:
+
+```sql
+-- per-viewer summary (total visits, last seen, recent activity)
+select * from v_viewer_activity where role = 'observer' order by last_viewed desc;
+
+-- raw visit log
+select * from view_events order by viewed_at desc;
+
+-- last login is free from Supabase Auth
+select email, last_sign_in_at from auth.users order by last_sign_in_at desc;
+```
 
 ---
 
