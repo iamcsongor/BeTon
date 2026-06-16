@@ -46,3 +46,18 @@ html, body { height: 100%; margin: 0; background: var(--bg); color: var(--txt); 
 .app .icon-btn { width: 38px; height: 38px; flex: 0 0 auto; }
 .app .avatar-btn { padding: 0; overflow: hidden; }
 .app .avatar-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Editable number fields in the log sheet: type directly or use +/- and chips */
+.num-big { display: flex; align-items: baseline; justify-content: center; gap: 6px; }
+.num-input {
+  min-width: 1ch; max-width: 72%; padding: 0; margin: 0;
+  background: transparent; border: none; outline: none;
+  border-bottom: 2px solid transparent;
+  text-align: center; color: var(--txt);
+  font-family: var(--fontTech); font-weight: 800; font-size: 30px; line-height: 1.1;
+  -moz-appearance: textfield;
+}
+.num-input::-webkit-outer-spin-button,
+.num-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.num-input::placeholder { color: var(--txt3); }
+.num-input:focus { border-bottom-color: color-mix(in oklch, var(--txt3) 55%, transparent); }

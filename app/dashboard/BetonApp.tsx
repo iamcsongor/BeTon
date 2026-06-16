@@ -419,7 +419,20 @@ function NumberField({ label, sub, value, unit, step, quicks, onChange, accent }
       <div className="field-h"><span className="lbl">{label}</span>{sub && <span className="lbl-r">{sub}</span>}</div>
       <div className="num-edit">
         <button className="stp" onClick={() => onChange(Math.max(0, value - step))}><Icon name="minus" size={16} /></button>
-        <div className="num-big" style={accent ? { color: accent } : undefined}>{kc(value)} <small>{unit}</small></div>
+        <div className="num-big">
+          <input
+            className="num-input"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            placeholder="0"
+            value={value ? String(value) : ''}
+            style={{ width: `${Math.max(1, String(value || '').length)}ch`, ...(accent ? { color: accent } : {}) }}
+            onFocus={(e) => e.currentTarget.select()}
+            onChange={(e) => { const n = parseInt(e.target.value.replace(/[^0-9]/g, ''), 10); onChange(Number.isNaN(n) ? 0 : n) }}
+          />
+          <small>{unit}</small>
+        </div>
         <button className="stp" onClick={() => onChange(value + step)}><Icon name="plus" size={16} /></button>
       </div>
       {quicks && <div className="quick-row">{quicks.map((q: any, i: number) => <button key={i} className="quick" onClick={() => onChange(q.set != null ? q.set : value + q.add)}>{q.label}</button>)}</div>}
