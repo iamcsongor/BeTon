@@ -9,7 +9,9 @@ import { createClient } from '@/lib/supabase/client'
    wired to live Supabase data for the signed-in user.
    ============================================================ */
 
-const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Abs', 'Cardio']
+const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Abs', 'Cardio', 'Extended walk']
+const MUSCLE_EMOJI: Record<string, string> = { 'Extended walk': '🧑‍🦯' }
+function muscleLabel(m: string) { return MUSCLE_EMOJI[m] ? `${m} ${MUSCLE_EMOJI[m]}` : m }
 const DOW = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 const MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 const MS_DAY = 86400000
@@ -479,7 +481,7 @@ function EditSheet({ state, date, onSave, onClose }: any) {
           </div>
           {draft.gym && (
             <div className="muscle-grid">
-              {MUSCLES.map((m) => <div key={m} className={'mg' + (draft.muscles.includes(m) ? ' on' : '')} onClick={() => toggleMuscle(m)}><span className="mg-l">{m}</span></div>)}
+              {MUSCLES.map((m) => <div key={m} className={'mg' + (draft.muscles.includes(m) ? ' on' : '')} onClick={() => toggleMuscle(m)}><span className="mg-l">{muscleLabel(m)}</span></div>)}
             </div>
           )}
         </div>
@@ -530,7 +532,7 @@ function DayCard({ state, date, onTap }: any) {
         <div className="dstat"><div className="lbl">Protein</div><div className="dstat-v">{d.protein}<small>g</small></div></div>
         <div className="dstat"><div className="lbl">Junk</div><div className="dstat-v">{d.junk ? kc(d.junk) : '0'}<small>kcal</small></div></div>
       </div>
-      {d.gym && d.muscles.length > 0 && <div className="muscles">{d.muscles.map((m: string) => <span key={m} className="muscle-chip">{m}</span>)}</div>}
+      {d.gym && d.muscles.length > 0 && <div className="muscles">{d.muscles.map((m: string) => <span key={m} className="muscle-chip">{muscleLabel(m)}</span>)}</div>}
     </div>
   )
 }
