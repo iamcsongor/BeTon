@@ -255,6 +255,7 @@ export type Database = {
         Row: {
           calories: number
           cheat: boolean
+          coffees: number
           contest_id: string
           created_at: string
           gym: boolean
@@ -269,6 +270,7 @@ export type Database = {
         Insert: {
           calories?: number
           cheat?: boolean
+          coffees?: number
           contest_id: string
           created_at?: string
           gym?: boolean
@@ -283,6 +285,7 @@ export type Database = {
         Update: {
           calories?: number
           cheat?: boolean
+          coffees?: number
           contest_id?: string
           created_at?: string
           gym?: boolean

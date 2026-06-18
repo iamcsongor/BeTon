@@ -15,6 +15,8 @@ function muscleLabel(m: string) { return MUSCLE_EMOJI[m] ? `${m} ${MUSCLE_EMOJI[
 const DOW = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 const MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 const MS_DAY = 86400000
+const DAILY_COFFEE_TARGET = 3
+const WEEKLY_COFFEE_QUOTA = 15
 
 function iso(ts: number) {
   return new Date(ts).toISOString().slice(0, 10)
@@ -51,22 +53,22 @@ function caloriePacePct(cals: number, loggedDays: number, weeklyCal: number) {
 function weekSummary(state: any, player: string, w: number) {
   const C = state.C
   const dates = weekDates(C, w)
-  let cals = 0, protein = 0, junk = 0, gym = 0, logged = 0, cheats = 0, proteinDays = 0
+  let cals = 0, coffees = 0, gym = 0, logged = 0, cheats = 0
   dates.forEach((dt) => {
     const d = state.days[player]?.[dt]
     if (!d) return
     logged++
-    cals += d.cals; junk += d.junk
-    if (d.protein) { protein += d.protein; proteinDays++ }
+    cals += d.cals
+    coffees += d.coffees || 0
     if (d.gym) gym++
     if (d.cheat) cheats++
   })
   const pts = (gym >= C.weeklyGym ? 1 : 0) + (logged === 7 && cals <= C.weeklyCal ? 1 : 0)
   return {
-    cals, protein, junk, gym, logged, cheats,
-    avgProtein: proteinDays ? Math.round(protein / proteinDays) : 0,
+    cals, coffees, gym, logged, cheats,
     gymHit: gym >= C.weeklyGym,
     calHit: logged === 7 ? cals <= C.weeklyCal : true,
+    coffeeHit: logged === 7 ? coffees <= WEEKLY_COFFEE_QUOTA : true,
     pts, complete: logged === 7,
   }
 }
@@ -383,7 +385,7 @@ function WeekDetail({ sum, C }: any) {
   )
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, padding: '4px 2px 2px' }}>
-      {cell('CALS', kc(sum.cals))}{cell('GYM', sum.gym + '/' + C.weeklyGym)}{cell('AVG PRO', sum.avgProtein, 'g')}{cell('CHEATS', sum.cheats)}
+      {cell('CALS', kc(sum.cals))}{cell('GYM', sum.gym + '/' + C.weeklyGym)}{cell('COFFEE', sum.coffees + '/' + WEEKLY_COFFEE_QUOTA)}{cell('CHEATS', sum.cheats)}
     </div>
   )
 }
@@ -466,7 +468,7 @@ function NumberField({ label, sub, value, unit, step, quicks, onChange, accent }
             onFocus={(e) => e.currentTarget.select()}
             onChange={(e) => { const n = parseInt(e.target.value.replace(/[^0-9]/g, ''), 10); onChange(Number.isNaN(n) ? 0 : n) }}
           />
-          <small>{unit}</small>
+          {unit ? <small>{unit}</small> : null}
         </div>
         <button className="stp" onClick={() => onChange(value + step)}><Icon name="plus" size={16} /></button>
       </div>
@@ -478,7 +480,7 @@ function EditSheet({ state, date, onSave, onClose }: any) {
   const player = state.selfName
   const color = state.color[player]
   const existing = state.days[player]?.[date]
-  const [draft, setDraft] = useState<any>(() => existing ? { ...existing, muscles: (existing.muscles || []).slice() } : { cals: 0, protein: 0, junk: 0, gym: false, muscles: [], cheat: false })
+  const [draft, setDraft] = useState<any>(() => existing ? { ...existing, muscles: (existing.muscles || []).slice() } : { cals: 0, coffees: 0, gym: false, muscles: [], cheat: false })
   const f = fmtDate(date)
   const used = cheatsUsed(state, player)
   const wasCheat = existing && existing.cheat
@@ -501,11 +503,9 @@ function EditSheet({ state, date, onSave, onClose }: any) {
           accent={draft.cals > goal ? 'var(--warn)' : 'var(--good)'}
           quicks={[{ label: '+100', add: 100 }, { label: '+250', add: 250 }, { label: '+500', add: 500 }, { label: 'CLEAR', set: 0 }]}
           onChange={(v: number) => set({ cals: v })} />
-        <NumberField label="Protein" value={draft.protein} unit="g" step={5}
-          quicks={[{ label: '+20', add: 20 }, { label: '+40', add: 40 }, { label: 'CLEAR', set: 0 }]} onChange={(v: number) => set({ protein: v })} />
-        <NumberField label="Junk calories" sub="McD · crisps · chocolate" value={draft.junk} unit="kcal" step={50}
-          accent={draft.junk > 0 ? 'var(--warn)' : undefined}
-          quicks={[{ label: 'McD +1200', add: 1200 }, { label: 'BAR +250', add: 250 }, { label: 'CLEAR', set: 0 }]} onChange={(v: number) => set({ junk: v })} />
+        <NumberField label="Coffees" sub={'Target ' + DAILY_COFFEE_TARGET + '/day · ' + WEEKLY_COFFEE_QUOTA + '/week'} value={draft.coffees} unit="" step={1}
+          accent={draft.coffees > DAILY_COFFEE_TARGET ? 'var(--warn)' : undefined}
+          quicks={[{ label: '+1', add: 1 }, { label: '+2', add: 2 }, { label: 'CLEAR', set: 0 }]} onChange={(v: number) => set({ coffees: v })} />
 
         <div className="field">
           <div className="toggle-row">
@@ -562,8 +562,7 @@ function DayCard({ state, date, onTap }: any) {
       </div>
       <div className="day-stats">
         <div className="dstat"><div className="lbl">Calories</div><div className={'dstat-v ' + (over ? 'over' : 'under')}>{kc(d.cals)} <small>/ {kc(goal)}</small></div></div>
-        <div className="dstat"><div className="lbl">Protein</div><div className="dstat-v">{d.protein}<small>g</small></div></div>
-        <div className="dstat"><div className="lbl">Junk</div><div className="dstat-v">{d.junk ? kc(d.junk) : '0'}<small>kcal</small></div></div>
+        <div className="dstat"><div className="lbl">Coffees</div><div className={'dstat-v' + (d.coffees > DAILY_COFFEE_TARGET ? ' over' : '')}>{d.coffees ?? 0}<small>/ {DAILY_COFFEE_TARGET}</small></div></div>
       </div>
       {d.gym && d.muscles.length > 0 && <div className="muscles">{d.muscles.map((m: string) => <span key={m} className="muscle-chip">{muscleLabel(m)}</span>)}</div>}
     </div>
@@ -574,6 +573,7 @@ function DailyScreen({ state, onSetGoal, editDate, setEditDate }: any) {
   const player = state.selfName
   const color = state.color[player]
   const goal = currentGoal(state, player)
+  const weekSum = weekSummary(state, player, C.currentWeek)
   const startTs = Date.parse(C.today + 'T00:00:00Z')
   const endTs = Date.parse(weekDates(C, 1)[0] + 'T00:00:00Z')
   const dates: string[] = []
@@ -591,6 +591,14 @@ function DailyScreen({ state, onSetGoal, editDate, setEditDate }: any) {
           <div className="stepper">
             <button className="stp" onClick={() => onSetGoal(Math.max(1000, goal - 50))}><Icon name="minus" size={16} /></button>
             <button className="stp" onClick={() => onSetGoal(goal + 50)}><Icon name="plus" size={16} /></button>
+          </div>
+        </div>
+        <div className="goal-inline" style={{ marginTop: 8 }}>
+          <div className="goal-inline-l">
+            <span className="lbl">This week · coffees</span>
+            <span className={'goal-inline-v' + (weekSum.coffees > WEEKLY_COFFEE_QUOTA ? ' pace-over' : '')}>
+              {weekSum.coffees}<small> / {WEEKLY_COFFEE_QUOTA} · {DAILY_COFFEE_TARGET}/day target</small>
+            </span>
           </div>
         </div>
       </div>
@@ -763,7 +771,7 @@ export default function BetonApp() {
       const days: any = { [blueName]: {}, [redName]: {} }
       ;(logs || []).forEach((l: any) => {
         const nm = nameById[l.profile_id]; if (!nm || !days[nm]) return
-        days[nm][l.log_date] = { cals: l.calories, protein: l.protein_g, junk: l.junk_calories, gym: l.gym, muscles: l.muscles || [], cheat: l.cheat }
+        days[nm][l.log_date] = { cals: l.calories, coffees: l.coffees ?? 0, gym: l.gym, muscles: l.muscles || [], cheat: l.cheat }
       })
       const { data: goalRows } = await supabase.from('calorie_goals').select('*').eq('contest_id', contest.id)
       const goals: any = { [blueName]: [], [redName]: [] }
@@ -812,11 +820,11 @@ export default function BetonApp() {
     const muscles = draft.gym ? draft.muscles : []
     await (supabase.from('daily_logs') as any).upsert({
       contest_id: state.contestId, profile_id: state.selfId, log_date: date,
-      calories: draft.cals, protein_g: draft.protein, junk_calories: draft.junk, gym: draft.gym, muscles, cheat: draft.cheat,
+      calories: draft.cals, coffees: draft.coffees ?? 0, gym: draft.gym, muscles, cheat: draft.cheat,
     }, { onConflict: 'contest_id,profile_id,log_date' })
     setState((p: any) => {
       const next = { ...p, days: { ...p.days, [p.selfName]: { ...p.days[p.selfName] } } }
-      next.days[p.selfName][date] = { cals: draft.cals, protein: draft.protein, junk: draft.junk, gym: draft.gym, muscles, cheat: draft.cheat }
+      next.days[p.selfName][date] = { cals: draft.cals, coffees: draft.coffees ?? 0, gym: draft.gym, muscles, cheat: draft.cheat }
       return next
     })
     setEditDate(null)

@@ -332,6 +332,7 @@
 .bar-fill.warn { background: var(--warn); }
 .bar-tick { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--txt2); opacity: 0.65; z-index: 1; }
 .tw-val.pace-over { color: var(--warn); }
+.goal-inline-v.pace-over { color: var(--warn); }
 
 .pace { font-size: 9px; letter-spacing: 0.1em; font-weight: 700; padding: 2px 6px; border-radius: 5px; display: inline-block; margin-top: 6px; white-space: nowrap; }
 .pace.good { color: var(--good); background: color-mix(in oklch, var(--good) 16%, transparent); }

@@ -34,7 +34,7 @@ function EditSheet({ state, setState, player, date, onClose }) {
   const existing = state.days[player][date];
   const [draft, setDraft] = useState(() => existing
     ? { ...existing, muscles: existing.muscles.slice() }
-    : { cals: 0, protein: 0, junk: 0, gym: false, muscles: [], cheat: false });
+    : { cals: 0, coffees: 0, gym: false, muscles: [], cheat: false });
   const f = fmtDate(date);
 
   const used = cheatsUsed(state, player);
@@ -49,7 +49,7 @@ function EditSheet({ state, setState, player, date, onClose }) {
     setState(prev => {
       const next = { ...prev, days: { ...prev.days, [player]: { ...prev.days[player] } } };
       next.days[player][date] = {
-        cals: draft.cals, protein: draft.protein, junk: draft.junk,
+        cals: draft.cals, coffees: draft.coffees || 0,
         gym: draft.gym, muscles: draft.gym ? draft.muscles : [],
         cheat: draft.cheat, cheatNo: draft.cheat ? (existing && existing.cheatNo) || (used + 1) : null,
       };
@@ -77,14 +77,10 @@ function EditSheet({ state, setState, player, date, onClose }) {
           quicks={[{ label: '+100', add: 100 }, { label: '+250', add: 250 }, { label: '+500', add: 500 }, { label: 'CLEAR', set: 0 }]}
           onChange={v => set({ cals: v })} />
 
-        <NumberField label="Protein" value={draft.protein} unit="g" step={5}
-          quicks={[{ label: '+20', add: 20 }, { label: '+40', add: 40 }, { label: 'CLEAR', set: 0 }]}
-          onChange={v => set({ protein: v })} />
-
-        <NumberField label="Junk calories" sub="McD · crisps · chocolate" value={draft.junk} unit="kcal" step={50}
-          accent={draft.junk > 0 ? 'var(--warn)' : null}
-          quicks={[{ label: 'McD +1200', add: 1200 }, { label: 'BAR +250', add: 250 }, { label: 'CLEAR', set: 0 }]}
-          onChange={v => set({ junk: v })} />
+        <NumberField label="Coffees" sub="Target 3/day · 15/week" value={draft.coffees || 0} unit="" step={1}
+          accent={draft.coffees > 3 ? 'var(--warn)' : null}
+          quicks={[{ label: '+1', add: 1 }, { label: '+2', add: 2 }, { label: 'CLEAR', set: 0 }]}
+          onChange={v => set({ coffees: v })} />
 
         {/* GYM */}
         <div className="field">
@@ -159,12 +155,8 @@ function DayCard({ state, player, date, onTap }) {
           <div className={'dstat-v ' + (over ? 'over' : 'under')}>{kc(d.cals)} <small>/ {kc(goal)}</small></div>
         </div>
         <div className="dstat">
-          <div className="lbl">Protein</div>
-          <div className="dstat-v">{d.protein}<small>g</small></div>
-        </div>
-        <div className="dstat">
-          <div className="lbl">Junk</div>
-          <div className="dstat-v">{d.junk ? kc(d.junk) : '0'}<small>kcal</small></div>
+          <div className="lbl">Coffees</div>
+          <div className={'dstat-v' + ((d.coffees || 0) > 3 ? ' over' : '')}>{d.coffees || 0}<small>/ 3</small></div>
         </div>
       </div>
       {d.gym && d.muscles.length > 0 && (

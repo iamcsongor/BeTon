@@ -81,6 +81,7 @@ create table public.daily_logs (
   calories int not null default 0 check (calories >= 0),
   protein_g int not null default 0 check (protein_g >= 0),
   junk_calories int not null default 0 check (junk_calories >= 0),
+  coffees int not null default 0 check (coffees >= 0),
   gym boolean not null default false,
   muscles public.muscle_group[] not null default '{}',
   cheat boolean not null default false,

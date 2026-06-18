@@ -4,6 +4,9 @@
 
 const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Abs', 'Cardio'];
 
+const DAILY_COFFEE_TARGET = 3;
+const WEEKLY_COFFEE_QUOTA = 15;
+
 const CONTEST = {
   weeks: 15,
   weeklyGym: 4,
@@ -105,13 +108,13 @@ function buildDays(player) {
       if (isCheat) cheatRunning++;
       const muscles = isGym ? SESSIONS[(wi * 2 + wk.gd.indexOf(i)) % SESSIONS.length] : [];
       // protein: higher on gym days
-      const protein = Math.round((isGym ? 150 + r() * 35 : 110 + r() * 30));
-      // junk: high on cheat days, occasional otherwise
+      const protein = 0;
       let junk = 0;
+      let coffees = Math.min(4, Math.round(r() * 4));
       if (isCheat) junk = 950 + Math.round(r() * 650);
       else if (r() > 0.62) junk = Math.round(r() * 420 / 10) * 10;
       days[date] = {
-        cals, protein, junk,
+        cals, protein, junk, coffees,
         gym: isGym, muscles: muscles.slice(),
         cheat: isCheat,
         cheatNo: isCheat ? cheatRunning : null,
@@ -139,22 +142,21 @@ function makeInitialState() {
 /* ---------- derived selectors ---------- */
 function weekSummary(state, player, w) {
   const dates = weekDates(w);
-  let cals = 0, protein = 0, junk = 0, gym = 0, logged = 0, cheats = 0, proteinDays = 0;
+  let cals = 0, coffees = 0, gym = 0, logged = 0, cheats = 0;
   dates.forEach(dt => {
     const d = state.days[player][dt];
     if (!d) return;
     logged++;
-    cals += d.cals; junk += d.junk;
-    if (d.protein) { protein += d.protein; proteinDays++; }
+    cals += d.cals;
+    coffees += d.coffees || 0;
     if (d.gym) gym++;
     if (d.cheat) cheats++;
   });
   const gymHit = gym >= CONTEST.weeklyGym;
-  const calHit = logged === 7 ? cals <= CONTEST.weeklyCal : true; // judged only when complete
+  const calHit = logged === 7 ? cals <= CONTEST.weeklyCal : true;
   const pts = (gym >= CONTEST.weeklyGym ? 1 : 0) + (logged === 7 && cals <= CONTEST.weeklyCal ? 1 : 0);
   return {
-    cals, protein, junk, gym, logged, cheats,
-    avgProtein: proteinDays ? Math.round(protein / proteinDays) : 0,
+    cals, coffees, gym, logged, cheats,
     gymHit, calHit, pts,
     complete: logged === 7,
   };
