@@ -5,7 +5,7 @@
 const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Abs', 'Cardio'];
 
 const DAILY_COFFEE_TARGET = 3;
-const WEEKLY_COFFEE_QUOTA = 15;
+const WEEKLY_COFFEE_QUOTA = DAILY_COFFEE_TARGET * 7;
 
 const CONTEST = {
   weeks: 15,

@@ -33,7 +33,7 @@ Applied to live DB on **2026-06-18:**
 ## Recent changes (update this section with every new feature)
 
 ### 2026-06-18 — Daily coffee tracking
-- **`daily_logs.coffees`** column added (target 3/day, weekly quota 15).
+- **`daily_logs.coffees`** column added (target 3/day, weekly quota 21).
 - Tracked in the Log tab and week summary; **not** part of Versus scoring.
 - UI shows warnings when daily or weekly limits are exceeded.
 - Migration: `supabase/migrations/009_daily_logs_coffees.sql`
