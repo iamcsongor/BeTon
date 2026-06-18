@@ -36,7 +36,7 @@ This README is the project's **running log**. It captures the vision, every deci
 - **Daily log** per person: calories, protein, junk calories, gym (with the muscle groups worked), and whether it was a cheat day.
 - **Cheat meals** are capped per person per contest (currently 10 each).
 - **Calorie goals** are *effective-dated*: a new goal applies from its date forward and never rewrites past days.
-- **Check-ins** at milestone weeks (5, 10, 15) for photos + a progress review.
+- **Check-ins** at milestone weeks (3, 6, 9, 12, 15) for photos + a progress review — every 3rd week, on the last day of that week.
 
 ---
 
@@ -150,7 +150,7 @@ Push to GitHub — Vercel auto-builds the Next.js app. Make sure the two env var
 - **Login method?** → **Email magic link** (passwordless).
 - **Prototype → live architecture?** → **Next.js** on Vercel. Chosen after comparing against a CDN-augmented mockup and a Vite SPA; the multi-user goal favors a framework with secure server-side logic, and Next.js is Vercel-native.
 - **Data model scope?** → **Full multi-user platform** (any number of users, multiple contests). Built generally; seeded with just Csongor + Peter for now.
-- **Assumed contest parameters** (taken from the prototype — please confirm or adjust): 15 weeks, ≥ 4 gym sessions/week, ≤ 14,000 kcal/week, 10 cheat meals each, default daily goal 2,000 kcal, check-ins at weeks 5/10/15, contest runs **15 Jun → 26 Sep 2026**.
+- **Assumed contest parameters** (taken from the prototype — please confirm or adjust): 15 weeks, ≥ 4 gym sessions/week, ≤ 14,000 kcal/week, 10 cheat meals each, default daily goal 2,000 kcal, check-ins at weeks 3/6/9/12/15, contest runs **15 Jun → 26 Sep 2026**.
 
 ### 2026-06-15 — Onboarding, challenges & registration
 - **Challenge flow:** an admin creates a contest and challenges an opponent by email → an invite. New invitees auto-join on first sign-in; existing users get an in-app Accept/Decline. Joining is routed through a secure `accept_invite` function so a user can only join a contest they were actually invited to.

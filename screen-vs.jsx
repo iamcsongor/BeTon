@@ -8,8 +8,17 @@ function paceState(cals, loggedDays) {
   return cals <= expected ? { cls: 'good', txt: 'ON PACE' } : { cls: 'warn', txt: 'OVER PACE' };
 }
 
+function caloriePacePct(cals, loggedDays) {
+  if (loggedDays === 0) return null;
+  const expected = CONTEST.weeklyCal * (loggedDays / 7);
+  return Math.round((cals / expected) * 100);
+}
+
 function TWColumn({ side, name, sum, color }) {
   const pace = paceState(sum.cals, sum.logged);
+  const pacePct = caloriePacePct(sum.cals, sum.logged);
+  const mirror = side === 'r';
+  const expected = CONTEST.weeklyCal * sum.logged / 7;
   const dots = Array.from({ length: CONTEST.weeklyGym }, (_, i) => i < sum.gym);
   return (
     <div className={'tw-col ' + side}>
@@ -24,13 +33,15 @@ function TWColumn({ side, name, sum, color }) {
         </div>
       </div>
       <div className="tw-metric">
-        <div className="lbl">Calories</div>
+        <div className="lbl">Calories · tick = target pace</div>
         <div className="tw-val">{kc(sum.cals)} <small>/ {kc(CONTEST.weeklyCal)}</small></div>
-        <ProgressBar value={sum.cals} max={CONTEST.weeklyCal} variant={color} tick={CONTEST.weeklyCal * sum.logged / 7} />
+        <ProgressBar value={sum.cals} max={CONTEST.weeklyCal} variant={color} tick={expected} mirror={mirror} />
       </div>
       <div className="tw-metric">
-        <div className="lbl">Junk · {sum.logged}d logged</div>
-        <div className="tw-val">{kc(sum.junk)} <small>kcal</small></div>
+        <div className="lbl">Pacing</div>
+        <div className={'tw-val' + (pacePct != null && pacePct > 100 ? ' pace-over' : '')}>
+          {pacePct != null ? <>{pacePct}<small>% of target</small></> : <>—<small> no days logged</small></>}
+        </div>
       </div>
       <span className={'pace ' + pace.cls}>{pace.txt}</span>
     </div>
@@ -47,9 +58,9 @@ function VSScreen({ state, go }) {
   const cheatC = cheatsUsed(state, 'Csongor');
   const cheatP = cheatsUsed(state, 'Peter');
 
-  // next check-in: weeks 5, 10, 15
-  const checkins = [5, 10, 15];
-  const nextCi = checkins.find(c => c >= CONTEST.currentWeek);
+  // next check-in: every 3rd week (3, 6, 9, 12, 15)
+  const checkins = [3, 6, 9, 12, 15];
+  const nextCi = checkins.find(c => c >= CONTEST.currentWeek) || checkins[checkins.length - 1];
   const ciDates = weekDates(nextCi);
   const ciEnd = fmtDate(ciDates[6]);
 
@@ -76,8 +87,8 @@ function VSScreen({ state, go }) {
         </div>
         <div className="cprog-bar">
           <div className="cprog-track"><div className="cprog-fill" style={{ width: pctDone + '%' }} /></div>
-          {[5, 10, 15].map(w => (
-            <div key={w} className={'cprog-tick' + (w < CONTEST.currentWeek ? ' done' : '')}
+          {checkins.map((w, i) => (
+            <div key={w} className={'cprog-tick' + (w < CONTEST.currentWeek ? ' done' : '') + (i === checkins.length - 1 ? ' end' : '')}
               style={{ left: 'calc(' + (w / CONTEST.weeks * 100) + '% - 1px)' }} />
           ))}
           <div className="cprog-now" style={{ left: 'calc(' + pctDone + '% - 1px)' }} />

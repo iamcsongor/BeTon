@@ -196,6 +196,7 @@
 }
 .cprog-tick { position: absolute; top: -2px; bottom: -2px; width: 2px; border-radius: 2px; background: var(--line2); z-index: 2; }
 .cprog-tick.done { background: var(--gold); }
+.cprog-tick.end { width: 3px; background: var(--gold); opacity: 0.85; }
 .cprog-now {
   position: absolute; top: 50%; transform: translateY(-50%);
   width: 11px; height: 11px; border-radius: 50%; z-index: 3;
@@ -326,9 +327,11 @@
 .bar-fill { height: 100%; border-radius: 4px; transition: width .5s cubic-bezier(.2,.8,.2,1); }
 .bar-fill.blue { background: linear-gradient(90deg, var(--blue), var(--blue-br)); }
 .bar-fill.red  { background: linear-gradient(90deg, var(--red), var(--red-br)); }
+.bar-fill.red.mirror { background: linear-gradient(270deg, var(--red), var(--red-br)); }
 .bar-fill.good { background: var(--good); }
 .bar-fill.warn { background: var(--warn); }
-.bar-tick { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--txt2); opacity: 0.5; }
+.bar-tick { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--txt2); opacity: 0.65; z-index: 1; }
+.tw-val.pace-over { color: var(--warn); }
 
 .pace { font-size: 9px; letter-spacing: 0.1em; font-weight: 700; padding: 2px 6px; border-radius: 5px; display: inline-block; margin-top: 6px; white-space: nowrap; }
 .pace.good { color: var(--good); background: color-mix(in oklch, var(--good) 16%, transparent); }

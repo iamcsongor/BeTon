@@ -39,7 +39,7 @@ function WeeksScreen({ state, go }) {
     const r = future ? null : weekResult(state, w);
     const dates = weekDates(w);
     const a = fmtDate(dates[0]), b = fmtDate(dates[6]);
-    const isCheckin = [5, 10, 15].includes(w);
+    const isCheckin = [3, 6, 9, 12, 15].includes(w);
 
     const pipState = (sum, kind) => {
       if (future) return 'pending';

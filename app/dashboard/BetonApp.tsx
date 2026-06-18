@@ -33,6 +33,19 @@ function weekDates(C: any, w: number) {
 function kc(n: number) {
   return (n || 0).toLocaleString('en-US')
 }
+/** Check-ins every 3 weeks; last day of that week (Sun) is the check-in date. */
+function checkinWeeksFor(numWeeks: number) {
+  const out: number[] = []
+  for (let w = 3; w <= numWeeks; w += 3) out.push(w)
+  return out
+}
+function expectedCaloriesToDate(weeklyCal: number, loggedDays: number) {
+  return weeklyCal * (loggedDays / 7)
+}
+function caloriePacePct(cals: number, loggedDays: number, weeklyCal: number) {
+  if (loggedDays === 0) return null
+  return Math.round((cals / expectedCaloriesToDate(weeklyCal, loggedDays)) * 100)
+}
 
 /* ---------- selectors ---------- */
 function weekSummary(state: any, player: string, w: number) {
@@ -141,13 +154,22 @@ function Switch({ on, gold, onClick }: any) {
     </div>
   )
 }
-function ProgressBar({ value, max, variant, tick }: any) {
+function ProgressBar({ value, max, variant, tick, mirror }: any) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100))
   const tickPct = tick != null ? Math.min(100, (tick / max) * 100) : null
   return (
-    <div className="bar">
-      <div className={'bar-fill ' + variant} style={{ width: pct + '%' }} />
-      {tickPct != null && <div className="bar-tick" style={{ left: tickPct + '%' }} />}
+    <div className={'bar' + (mirror ? ' bar-mirror' : '')}>
+      <div
+        className={'bar-fill ' + variant + (mirror ? ' mirror' : '')}
+        style={mirror ? { width: pct + '%', marginLeft: 'auto' } : { width: pct + '%' }}
+      />
+      {tickPct != null && (
+        <div
+          className="bar-tick"
+          title="Target pace — calories you should be at for days logged this week"
+          style={mirror ? { right: tickPct + '%' } : { left: tickPct + '%' }}
+        />
+      )}
     </div>
   )
 }
@@ -155,6 +177,9 @@ function ProgressBar({ value, max, variant, tick }: any) {
 /* ---------- VERSUS screen ---------- */
 function TWColumn({ C, side, name, sum, color }: any) {
   const pace = paceState(C, sum.cals, sum.logged)
+  const pacePct = caloriePacePct(sum.cals, sum.logged, C.weeklyCal)
+  const mirror = side === 'r'
+  const expected = expectedCaloriesToDate(C.weeklyCal, sum.logged)
   const dots = Array.from({ length: C.weeklyGym }, (_, i) => i < sum.gym)
   return (
     <div className={'tw-col ' + side}>
@@ -167,13 +192,15 @@ function TWColumn({ C, side, name, sum, color }: any) {
         <div className="dots">{dots.map((on: boolean, i: number) => <div key={i} className={'gdot ' + color + (on ? ' on' : '')} />)}</div>
       </div>
       <div className="tw-metric">
-        <div className="lbl">Calories</div>
+        <div className="lbl">Calories · tick = target pace</div>
         <div className="tw-val">{kc(sum.cals)} <small>/ {kc(C.weeklyCal)}</small></div>
-        <ProgressBar value={sum.cals} max={C.weeklyCal} variant={color} tick={C.weeklyCal * sum.logged / 7} />
+        <ProgressBar value={sum.cals} max={C.weeklyCal} variant={color} tick={expected} mirror={mirror} />
       </div>
       <div className="tw-metric">
-        <div className="lbl">Junk · {sum.logged}d logged</div>
-        <div className="tw-val">{kc(sum.junk)} <small>kcal</small></div>
+        <div className="lbl">Pacing</div>
+        <div className={'tw-val' + (pacePct != null && pacePct > 100 ? ' pace-over' : '')}>
+          {pacePct != null ? <>{pacePct}<small>% of target</small></> : <>—<small> no days logged</small></>}
+        </div>
       </div>
       <span className={'pace ' + pace.cls}>{pace.txt}</span>
     </div>
@@ -274,7 +301,13 @@ function VSScreen({ state, go }: any) {
         <div className="cprog-top"><span>Contest progress</span><span className="cprog-pct">{pctDone}%<span className="cprog-pct-l"> complete</span></span></div>
         <div className="cprog-bar">
           <div className="cprog-track"><div className="cprog-fill" style={{ width: pctDone + '%' }} /></div>
-          {checkins.map((w: number) => <div key={w} className={'cprog-tick' + (w < C.currentWeek ? ' done' : '')} style={{ left: 'calc(' + (w / C.weeks * 100) + '% - 1px)' }} />)}
+          {checkins.map((w: number, i: number) => (
+            <div
+              key={w}
+              className={'cprog-tick' + (w < C.currentWeek ? ' done' : '') + (i === checkins.length - 1 ? ' end' : '')}
+              style={{ left: 'calc(' + (w / C.weeks * 100) + '% - 1px)' }}
+            />
+          ))}
           <div className="cprog-now" style={{ left: 'calc(' + pctDone + '% - 1px)' }} />
         </div>
       </div>
@@ -740,7 +773,12 @@ export default function BetonApp() {
       const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
       const elapsed = Math.max(0, Math.floor((Date.parse(today + 'T00:00:00Z') - Date.parse(contest.start_date + 'T00:00:00Z')) / MS_DAY))
       const currentWeek = Math.min(contest.num_weeks, Math.max(1, Math.floor(elapsed / 7) + 1))
-      const C = { weeks: contest.num_weeks, weeklyGym: contest.weekly_gym_target, weeklyCal: contest.weekly_calorie_cap, cheatTotal: contest.cheat_total_allowance, finish: contest.end_date, start: contest.start_date, today, currentWeek, checkins: contest.checkin_weeks || [5, 10, 15], name: contest.name }
+      const checkins = (() => {
+        const raw = (contest.checkin_weeks?.length ? contest.checkin_weeks : checkinWeeksFor(contest.num_weeks)) as number[]
+        if (raw.length === 3 && raw[0] === 5 && raw[1] === 10 && raw[2] === 15) return checkinWeeksFor(contest.num_weeks)
+        return raw
+      })()
+      const C = { weeks: contest.num_weeks, weeklyGym: contest.weekly_gym_target, weeklyCal: contest.weekly_calorie_cap, cheatTotal: contest.cheat_total_allowance, finish: contest.end_date, start: contest.start_date, today, currentWeek, checkins, name: contest.name }
       if (!alive) return
       setState({ C, days, goals, players: [blueName, redName], color: { [blueName]: 'blue', [redName]: 'red' }, selfName: nameById[user.id] || blueName, selfId: user.id, selfAvatar: avatarById[user.id] || '', contestId: contest.id, isObserver: myRole === 'observer' })
       setStatus('ready')

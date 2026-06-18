@@ -77,13 +77,22 @@ function Switch({ on, gold, onClick }) {
   );
 }
 
-function ProgressBar({ value, max, variant, tick }) {
+function ProgressBar({ value, max, variant, tick, mirror }) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
   const tickPct = tick != null ? Math.min(100, (tick / max) * 100) : null;
   return (
-    <div className="bar">
-      <div className={'bar-fill ' + variant} style={{ width: pct + '%' }} />
-      {tickPct != null && <div className="bar-tick" style={{ left: tickPct + '%' }} />}
+    <div className={'bar' + (mirror ? ' bar-mirror' : '')}>
+      <div
+        className={'bar-fill ' + variant + (mirror ? ' mirror' : '')}
+        style={mirror ? { width: pct + '%', marginLeft: 'auto' } : { width: pct + '%' }}
+      />
+      {tickPct != null && (
+        <div
+          className="bar-tick"
+          title="Target pace — calories you should be at for days logged this week"
+          style={mirror ? { right: tickPct + '%' } : { left: tickPct + '%' }}
+        />
+      )}
     </div>
   );
 }

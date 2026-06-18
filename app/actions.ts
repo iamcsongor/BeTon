@@ -59,7 +59,7 @@ export async function createContestAndChallenge(formData: FormData) {
       end_date: endDate,
       num_weeks: numWeeks,
       status: 'active',
-      checkin_weeks: [5, 10, 15],
+      checkin_weeks: Array.from({ length: Math.floor(numWeeks / 3) }, (_, i) => (i + 1) * 3),
     })
     .select('id')
     .single()
