@@ -2,6 +2,9 @@
    BeTon — Daily player view + edit sheet
    ============================================================ */
 
+const DAILY_COFFEE_TARGET = 3;
+const WEEKLY_COFFEE_QUOTA = DAILY_COFFEE_TARGET * 7;
+
 function isFuture(date) { return daysBetween(CONTEST.today, date) > 0; }
 function isToday(date) { return date === CONTEST.today; }
 
@@ -77,8 +80,8 @@ function EditSheet({ state, setState, player, date, onClose }) {
           quicks={[{ label: '+100', add: 100 }, { label: '+250', add: 250 }, { label: '+500', add: 500 }, { label: 'CLEAR', set: 0 }]}
           onChange={v => set({ cals: v })} />
 
-        <NumberField label="Coffees" sub="Target 3/day · 15/week" value={draft.coffees || 0} unit="" step={1}
-          accent={draft.coffees > 3 ? 'var(--warn)' : null}
+        <NumberField label="Coffees" sub={'Target ' + DAILY_COFFEE_TARGET + '/day · ' + WEEKLY_COFFEE_QUOTA + '/week'} value={draft.coffees || 0} unit="" step={1}
+          accent={draft.coffees > DAILY_COFFEE_TARGET ? 'var(--warn)' : null}
           quicks={[{ label: '+1', add: 1 }, { label: '+2', add: 2 }, { label: 'CLEAR', set: 0 }]}
           onChange={v => set({ coffees: v })} />
 
@@ -156,7 +159,7 @@ function DayCard({ state, player, date, onTap }) {
         </div>
         <div className="dstat">
           <div className="lbl">Coffees</div>
-          <div className={'dstat-v' + ((d.coffees || 0) > 3 ? ' over' : '')}>{d.coffees || 0}<small>/ 3</small></div>
+          <div className={'dstat-v' + ((d.coffees || 0) > DAILY_COFFEE_TARGET ? ' over' : '')}>{d.coffees || 0}<small>/ {DAILY_COFFEE_TARGET}</small></div>
         </div>
       </div>
       {d.gym && d.muscles.length > 0 && (

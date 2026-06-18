@@ -16,7 +16,7 @@ const DOW = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 const MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 const MS_DAY = 86400000
 const DAILY_COFFEE_TARGET = 3
-const WEEKLY_COFFEE_QUOTA = 15
+const WEEKLY_COFFEE_QUOTA = DAILY_COFFEE_TARGET * 7
 
 function iso(ts: number) {
   return new Date(ts).toISOString().slice(0, 10)
